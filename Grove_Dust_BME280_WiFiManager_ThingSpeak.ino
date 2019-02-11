@@ -1,4 +1,11 @@
 /*
+ Change History:
+ v7.alpha First push from local files into Github.
+*/
+
+
+
+/*
 Some or much of this code is from BME280 I2C Test.ino
 This code shows how to record data from the BME280 environmental sensor
 using I2C interface. This file is an example file, part of the Arduino
