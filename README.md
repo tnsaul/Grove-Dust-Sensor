@@ -1,7 +1,6 @@
 # Grove-Dust-Sensor
 Use a Grove Dust Sensor to send information to ThingSpeak as an IOT experiment.
 
-
 The Grove Dust Sensor is a nifty little device to see how dirty my workshop air is (I do woodworking hence it is pretty bad).
 Reference:  http://wiki.seeedstudio.com/Grove-Dust_Sensor/
 
