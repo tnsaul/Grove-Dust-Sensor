@@ -1,7 +1,10 @@
+/* =============================================== */
 /*
  Change History:
  v7.alpha First push from local files into Github.
+ v8 General tidy up of code.
 */
+/* =============================================== */
 
 
 
@@ -68,11 +71,9 @@ SCK (Serial Clock)  ->  A5 on Uno/Pro-Mini, 21 on Mega2560/Due, 3 Leonardo/Pro-M
 /* ==== WiFi Manager Includes ==== */
 #include <ESP8266WiFi.h>          // https://github.com/esp8266/Arduino
 #include <WiFiUdp.h>              // For NTP service
-//needed for library
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          // https://github.com/tzapu/WiFiManager.git
-
 //for LED status
 #include <Ticker.h>
 
@@ -122,28 +123,21 @@ Ticker ticker;
   // IPAddress timeServer(129, 6, 15, 28);  // time.nist.gov NTP server
   IPAddress timeServerIP;                   // time.nist.gov NTP server address
   const char* ntpServerName = "time.nist.gov";
-  
   const int NTP_PACKET_SIZE = 48;           // NTP time stamp is in the first 48 bytes of the message
   const long TZOFFSET = 10 * 3600;          // TNS: Rough aproach to Timezone offset in seconds
-  
+                                            // for Austrlian EST ie GMT+10 hours
   byte packetBuffer[ NTP_PACKET_SIZE];      //buffer to hold incoming and outgoing packets
   
-  // A UDP instance to let us send and receive packets over UDP
-  WiFiUDP udp;
+  WiFiUDP udp;                              // A UDP instance to let us send and receive packets over UDP
 
 /* ====  ThingSpeak Global Variables ==== */
   WiFiClient client;                        // Need this for ThingSpeak?
-  //float current_temp;                     // These are used for sending to ThingSpeak
-  //float current_humidity;
-  
-
-  
   uint32_t delayMS;
   // Set up some time variables
-  // 2^32 -1 - give me about 24 days before it rolls over.
+  // 2^32 -1 - gives me about 24 days before it rolls over.
   unsigned long oldTime, newTime;
   // 5 minutes = 1000 x 60 x 5 = 300000
-  #define THINGSPEAKDELAY 300000
+  #define THINGSPEAKDELAY 300000            // This is how long between measures.
 /* ==== END Global Variables ==== */
 
 
@@ -154,7 +148,9 @@ void printBME280Data(Stream * client);
 void printBME280CalculatedData(Stream* client);
 /* ==== END Prototypes ==== */
 
-/* ==== Setup =========================================================================================== */
+/* =============================================== */
+/* ==== Setup ==================================== */
+/* =============================================== */
 void setup() {
   Serial.begin(SERIAL_BAUD);
   while(!Serial) {} // Wait
@@ -162,7 +158,7 @@ void setup() {
   // Use the template begin(int SDA, int SCL);
   // On WeMOS Mini D1 we have
   // SDA = D2 = GPIO4
-  // SCL = D1 = GPio5
+  // SCL = D1 = GPIO5
   while(!bme.begin(SDA,SCL)){
     Serial.println("Could not find BME280 sensor!");
     delay(1000);
@@ -181,6 +177,7 @@ void setup() {
   // This loops until the WIFI is configured
   configureWIFI(false);
 
+  // StartUDP handler for NTP
   Serial.println("Starting UDP");
   udp.begin(localPort);
   Serial.print("Local port: ");
@@ -194,7 +191,9 @@ void setup() {
 }
 /* ==== END Setup ==== */
 
-/* ==== Loop =============================================================================================== */
+/* =============================================== */
+/* ==== Loop ===================================== */
+/* =============================================== */
 void loop() {
   // Measure the dust using the Grove sensor, noting this is a 30 second looping code notionally
   // We want to only measure every 5 minutes
@@ -230,9 +229,12 @@ void loop() {
 
 
 
-
-/* ==== Functions ==== */
+/* =============================================== */
+/* ==== Functions ================================ */
+/* =============================================== */
 // ThingSpeak uploader routine
+// PRE:  Uses globals of temperature, humidity, (dust) concentration, lowpulse duration.
+// POST: Data written to ThingSpeak
 void writeThingSpeak(){
   // LED ON to indicate we are handling a request
   digitalWrite(BUILTIN_LED, LOW);  
@@ -259,12 +261,16 @@ void writeThingSpeak(){
   digitalWrite(BUILTIN_LED, HIGH);    
 }
 
-
-
+/* =============================================== */
+// WiFiManager Main Function
+// PRE: Generalised function to reset the WiFi if needed
+//      ClearWIFI = true will force clearing of the WIFI settings
+//
+//      Fetches ssid and password that has been previously collected and tries to connect
+//      if it does not connect it starts an access point with the specified name
+//      here  "AutoConnectAP"
+//      and goes into a blocking loop awaiting configuration.
 void configureWIFI(boolean ClearWIFI){
-  // Generalised function to reset the WiFi if needed
-  // ClearWIFI = true will force clearing of the WIFI settings
-    
   // start ticker with 0.5 because we start in AP mode and try to connect
   ticker.attach(0.6, tick);  
 
@@ -301,7 +307,7 @@ void configureWIFI(boolean ClearWIFI){
   digitalWrite(BUILTIN_LED, LOW);
 }
 
-
+/* =============================================== */
 void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());
@@ -311,6 +317,8 @@ void configModeCallback (WiFiManager *myWiFiManager) {
   ticker.attach(0.2, tick);
 }
 
+/* =============================================== */
+// Simple LED Toggle function used in WiFiManager
 void tick(){
   //toggle state
   int state = digitalRead(BUILTIN_LED);  // get the current state of GPIO1 pin
@@ -318,6 +326,7 @@ void tick(){
 }
 
 
+/* =============================================== */
 void doDustMeasurement(void){
   /*
    * The Grove sensor runs in a tight loop, so it will need to consider impacts if there is any other looping code.
@@ -354,6 +363,7 @@ void doDustMeasurement(void){
 
 }
 
+/* =============================================== */
 void takeBME280Reading(void){
   // TNS - Notionally we are in "forced mode" which means we need to trigger the read then wait 8ms
   bme.setMode(0x01);
@@ -371,6 +381,7 @@ void takeBME280Reading(void){
 
 
 
+/* =============================================== */
 void printBME280Data(Stream* client){
   /*
   Keep in mind the temperature is used for humidity and
@@ -389,6 +400,7 @@ void printBME280Data(Stream* client){
 }
 
 
+/* =============================================== */
 void printBME280CalculatedData(Stream* client){
   float altitude = bme.alt(metric);
   float dewPoint = bme.dew(metric);
@@ -401,6 +413,7 @@ void printBME280CalculatedData(Stream* client){
 
 }
 
+/* =============================================== */
 void getNTPTime()
 {
   //get a random server from the pool
@@ -464,6 +477,7 @@ void getNTPTime()
   }
 }
 
+/* =============================================== */
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address)
 {
@@ -473,9 +487,9 @@ unsigned long sendNTPpacket(IPAddress& address)
   // Initialize values needed to form NTP request
   // (see URL above for details on the packets)
   packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;     // Stratum, or type of clock
-  packetBuffer[2] = 6;     // Polling Interval
-  packetBuffer[3] = 0xEC;  // Peer Clock Precision
+  packetBuffer[1] = 0;            // Stratum, or type of clock
+  packetBuffer[2] = 6;            // Polling Interval
+  packetBuffer[3] = 0xEC;         // Peer Clock Precision
   // 8 bytes of zero for Root Delay & Root Dispersion
   packetBuffer[12]  = 49;
   packetBuffer[13]  = 0x4E;
