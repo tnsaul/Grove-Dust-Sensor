@@ -71,7 +71,7 @@ SCK (Serial Clock)  ->  A5 on Uno/Pro-Mini, 21 on Mega2560/Due, 3 Leonardo/Pro-M
 //needed for library
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>
+#include <WiFiManager.h>          // https://github.com/tzapu/WiFiManager.git
 
 //for LED status
 #include <Ticker.h>
